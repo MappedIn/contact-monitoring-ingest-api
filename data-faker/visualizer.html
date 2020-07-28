@@ -1,0 +1,213 @@
+<html>
+	<head>
+		<link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+		integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+		crossorigin=""/>
+		<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+		integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+		crossorigin=""></script>
+
+		<style>
+			html, body, #mapid {
+				width: 100%;
+				height: 100%;
+				margin: 0px;
+			}
+
+			#range {
+				position: absolute;
+				bottom: 50px;
+				z-index: 1000;
+				width: 100%;
+			}
+			#play {
+				position: absolute;
+				bottom: 20px;
+				left: 50%;
+				transform: translateX(-50%);
+				z-index: 1000;
+			}
+
+			#floor {
+				position: absolute;
+				bottom: 20px;
+				right: 20px;
+				z-index: 1000;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="mapid"></div>
+		<input type="range" id="range" ></input>
+		<select id="floor"></select>
+		<button id="play">PLAY</button>
+
+		<script>
+			const map = L.map('mapid');
+
+			L.tileLayer(
+				'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+				{
+					attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+					maxZoom: 20,
+					maxNativeZoom: 18
+				}
+			).addTo(map);
+
+			let devices = {};
+			let selectedDevices = [];
+			function moveDevice(positionEvent) {
+				const {
+					device,
+					lonlat,
+					acc
+				} = positionEvent;
+
+				if (!devices[device]) {
+					const deviceColor = '#' + (
+						device
+						.split('-')
+						.map(n => parseInt(n, 16))
+						.reduce((r, n) => r + n, 0) % 16777215
+					).toString(16);
+
+					devices[device] = L.circle([lonlat[1], lonlat[0]], {
+						color: selectedDevices.indexOf(device) === -1 ? deviceColor : 'red',
+						fillColor: deviceColor,
+						fillOpacity: 0.5,
+						weight: 1,
+						radius: acc,
+					}).on('click', (e) => {
+						console.log(e)
+						const idx = selectedDevices.indexOf(device);
+						if (idx !== -1) {
+							selectedDevices.splice(idx, 1);
+						} else {
+							selectedDevices.push(device);
+						}
+						getDataAtTimeBucket();
+					}).addTo(map);
+
+				} else {
+					devices[device]
+						.setLatLng([lonlat[1], lonlat[0]])
+						.setRadius(acc);
+				}
+			}
+
+			function clearAllDevices() {
+				for (const i in devices) {
+					devices[i].remove(map);
+				}
+				devices = {};
+			}
+
+			const timeBucketSize = 60 * 1000;
+
+			let minutesAggregationLines = {};
+			function moveAggLine(agg) {
+				const [e1, e2] = agg.events;
+				const id = `${e1.device}${e2.device}`;
+
+				const latlngs = [
+					[e1.lonlat[1], e1.lonlat[0]],
+					[e2.lonlat[1], e2.lonlat[0]],
+				];
+
+				if (!minutesAggregationLines[id]) {
+					minutesAggregationLines[id] = L.polyline(
+						latlngs,
+						{ color: 'red' },
+					).addTo(map);
+				} else {
+					minutesAggregationLines[id].setLatLngs(latlngs);
+				}
+
+				return minutesAggregationLines[id];
+			}
+
+			function clearAllAggLines() {
+				for (const i in minutesAggregationLines) {
+					minutesAggregationLines[i].remove(map);
+				}
+				minutesAggregationLines = {};
+			}
+
+			let paused = true;
+			function playPause(pause = !paused) {
+				paused = pause;
+				document.getElementById('play').innerText = paused ? 'PLAY' : 'PAUSE';
+			}
+			document.getElementById('play').onclick = (e) => playPause();
+
+			let currentFloor = 0;
+			let currentTimeBucket = 0;
+
+			async function getDataAtTimeBucket() {
+				const floor = currentFloor;
+				const timeBucket = currentTimeBucket;
+
+				console.log(`requesting floor: ${floor} timebucket: ${timeBucket} devices: ${devices}`);
+
+				const result = await fetch(`/at/${floor}/${timeBucket}?devices=${selectedDevices}`);
+				const data = await result.json();
+
+				if (data) {
+					const {
+						positionEvents,
+						minuteAggregations,
+					} = data;
+
+					clearAllDevices();
+					if (positionEvents && positionEvents.length) {
+						positionEvents.forEach((e) => moveDevice(e))
+					}
+
+					clearAllAggLines();
+					if (minuteAggregations && minuteAggregations.length) {
+						minuteAggregations.forEach((a) => moveAggLine(a));
+					}
+				}
+			}
+
+			(async () => {
+				const {
+					boundingBox,
+					floorBounds,
+					timeRange,
+				} = await (await fetch('/init')).json();
+				const [min, max] = timeRange;
+
+				console.log(
+					boundingBox,
+					floorBounds,
+					timeRange,
+				);
+				currentTimeBucket = min;
+				getDataAtTimeBucket();
+				map.setView([boundingBox[0][1],boundingBox[0][0]], 20);
+
+				const timRange = document.getElementById("range");
+				timRange.min = min;
+				timRange.max = max;
+
+				timRange.onchange = (e) => {
+					playPause(true);
+					currentTimeBucket = e.target.value;
+					getDataAtTimeBucket();
+				}
+
+				const floorSelect = document.getElementById("floor");
+
+				for (let i = floorBounds[0]; i < floorBounds[1]; i++) {
+					floorSelect.innerHTML += `<option value=${i}>Floor ${i}</option>`;
+				}
+				floorSelect.value = 1;
+				floorSelect.onchange = (e) => {
+					currentFloor = e.target.value;
+					getDataAtTimeBucket();
+				}
+			})();
+		</script>
+	</body>
+</html>

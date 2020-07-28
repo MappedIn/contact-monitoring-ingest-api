@@ -1,0 +1,24 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Debug Data Faker",
+            "program": "./index.js",
+            "cwd": "${workspaceFolder}/data-faker",
+            "args": ["configs/410-albert.json"]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Debug Data Visualizer",
+            "program": "./server.js",
+            "cwd": "${workspaceFolder}/data-faker",
+            "args": ["configs/410-albert.json"]
+        }
+    ]
+}

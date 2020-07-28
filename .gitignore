@@ -1,0 +1,69 @@
+# Logs
+logs
+*.log*
+
+# Config file(s)
+**/.env
+
+# Build generated
+build/
+dist/
+locales/build/
+bin/
+env/
+__pycache__/
+
+# Test coverage
+coverage/
+
+### SublimeText ###
+# Cache files for sublime text
+*.tmlanguage.cache
+*.tmPreferences.cache
+*.stTheme.cache
+
+# workspace files are user-specific
+*.sublime-workspace
+
+# project files should be checked into the repository, unless a significant
+# proportion of contributors will probably not be using SublimeText
+# *.sublime-project
+
+### Vim ###
+*.sw[a-p]
+
+### WebStorm/IntelliJ ###
+/.idea
+modules.xml
+*.ipr
+*.iml
+
+### System Files ###
+*.DS_Store
+
+# Windows thumbnail cache files
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+
+# Folder config file
+Desktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+node_modules/
+
+# local mongodb volume if using docker-compose
+data/
