@@ -1,3 +1,5 @@
+![CI build](https://github.com/MappedIn/contact-monitoring-ingest-api/workflows/CI/badge.svg)
+
 # Contact Monitoring Ingestion API
 
 1. [Purpose](#purpose)
