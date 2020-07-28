@@ -1,5 +1,11 @@
 ![CI build](https://github.com/MappedIn/contact-monitoring-ingest-api/workflows/CI/badge.svg)
 
+### This project is part of a larger contact monitoring solution
+
+- [Ingestion API (this project)](https://github.com/MappedIn/contact-monitoring-ingest-api)
+- [Dashboard](https://github.com/MappedIn/contact-monitoring-dashboard)
+- [iOS SDK](https://github.com/MappedIn/contact-monitoring-ios-sdk)
+
 # Contact Monitoring Ingestion API
 
 1. [Purpose](#purpose)
